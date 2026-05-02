@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="icon" href="{{ url_for('static', filename='images/logo.ico') }}">
+    <title>Create Account</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <main class="auth-page">
+        <div class="lightning-layer" aria-hidden="true">
+            <span class="lightning lightning-one"></span>
+            <span class="lightning lightning-two"></span>
+            <span class="lightning lightning-three"></span>
+        </div>
+
+        <section class="auth-card register-card">
+            <h1>Create Account</h1>
+            <p class="auth-subtitle">Set up your access credentials</p>
+
+            <form method="POST">
+                <input type="text" name="usuario" placeholder="Username">
+                <input type="email" name="email" placeholder="Email address">
+                <input type="password" name="password" placeholder="Password">
+                <input type="password" name="confirm_password" placeholder="Confirm password">
+
+                <button type="submit">Create Account</button>
+
+                {% if error %}
+                    <p id="error-message" class="error-message">{{ error }}</p>
+                {% endif %}
+            </form>
+
+            <div class="auth-links">
+                <a href="{{ url_for('login') }}">Already have credentials?</a>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        setTimeout(function() {
+            const errorMessage = document.getElementById("error-message");
+
+            if (errorMessage) {
+                errorMessage.style.display = "none";
+            }
+        }, 2500);
+    </script>
+
+</body>
+</html>

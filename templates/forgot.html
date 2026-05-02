@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="icon" href="{{ url_for('static', filename='images/logo.ico') }}">
+    <title>Recover Account</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <main class="auth-page">
+        <div class="lightning-layer" aria-hidden="true">
+            <span class="lightning lightning-one"></span>
+            <span class="lightning lightning-two"></span>
+            <span class="lightning lightning-three"></span>
+        </div>
+
+        <section class="auth-card">
+            <h1>Recover Account</h1>
+            <p class="auth-subtitle">Enter your email to receive recovery instructions</p>
+
+            <form method="POST">
+                <input type="email" name="email" placeholder="Email address">
+
+                <button type="submit">Continue</button>
+
+                {% if error %}
+                    <p id="error-message" class="error-message">{{ error }}</p>
+                {% endif %}
+
+                {% if success %}
+                    <p class="success-message">{{ success }}</p>
+                {% endif %}
+
+                
+            </form>
+
+            <div class="auth-links">
+                <a href="{{ url_for('login') }}">Back to Login</a>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        setTimeout(function() {
+            const errorMessage = document.getElementById("error-message");
+
+            if (errorMessage) {
+                errorMessage.style.display = "none";
+            }
+        }, 2000);
+    </script>
+
+</body>
+</html>

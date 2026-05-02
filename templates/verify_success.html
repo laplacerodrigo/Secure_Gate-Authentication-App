@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="icon" href="{{ url_for('static', filename='images/logo.ico') }}">
+    <title>Account Verified</title>
+    <meta http-equiv="refresh" content="8; url=/">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <main class="auth-page">
+        <div class="lightning-layer" aria-hidden="true">
+            <span class="lightning lightning-one"></span>
+            <span class="lightning lightning-two"></span>
+            <span class="lightning lightning-three"></span>
+        </div>
+
+        <section class="auth-card success-card">
+            <div class="success-orbit" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+
+            <h1>Account Verified</h1>
+            <p class="auth-subtitle">
+                Your account is now active.
+            </p>
+
+            <div class="redirect-countdown">
+                <span class="countdown-label">Redirecting in</span>
+                <strong id="countdown-number">8</strong>
+                <span class="countdown-label">seconds</span>
+            </div>
+
+            <p class="success-message">
+                You can now log in with your credentials.
+            </p>
+
+            <div class="auth-links">
+                <a href="{{ url_for('login') }}">Go to Login</a>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        let secondsLeft = 8;
+        const countdownNumber = document.getElementById("countdown-number");
+
+        const countdownTimer = setInterval(function() {
+            secondsLeft -= 1;
+            countdownNumber.textContent = secondsLeft;
+
+            if (secondsLeft <= 0) {
+                clearInterval(countdownTimer);
+            }
+        }, 1000);
+    </script>
+
+</body>
+</html>

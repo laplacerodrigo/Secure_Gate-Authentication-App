@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="icon" href="{{ url_for('static', filename='images/logo.ico') }}">
+    <title>Main Page</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <header class="app-header">
+        <h1>SecureGate</h1>
+        <a href="{{ url_for('logout') }}">Log Out</a>
+    </header>
+
+    <main class="main-page">
+        <div class="main-grid"></div>
+        <div class="main-scan"></div>
+
+        <section class="main-panel">
+            <div class="energy-core">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+
+            <h1 class="glitch-title" data-text="Welcome to my project">Welcome to my project</h1>
+            <p class="main-subtitle">Your session is active</p>
+
+            <div class="status-board">
+                <div>
+                    <strong>System</strong>
+                    <span>Online</span>
+                </div>
+                <div>
+                    <strong>Access</strong>
+                    <span>Verified</span>
+                </div>
+                <div>
+                    <strong>Mode</strong>
+                    <span>Secure</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+</body>
+</html>
+
