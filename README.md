@@ -37,41 +37,41 @@ SecureGate is a Flask-based authentication web application that implements a com
 
 The user submits a username, email, password, and password confirmation. The application validates that the email format is correct, the password fields are not empty, both passwords match, the password has at least 12 characters, the password is not the same as the username, and the password is not a commonly used password. After validation, the password is hashed and the account is saved with `email_verified = 0`, meaning the user cannot log in until verifying their email.
 
-![Account Registration](images\registration_page.png)
+![Account Registration](images/registration_page.png)
 
 ### Email Verification Flow
 
 After registration, a secure token is generated and a verification link is sent to the user's email. The link points to `/verify-email/<token>`. When opened, the app checks the token and, if valid, updates the account to `email_verified = 1` and clears the token.
 
-![Account Validation](images\email_verification_page.png)
-![Email Authentication Sent](images\email_verification_page_1.png)
-![Account finally active](images\email_verification_page_1.png)
+![Account Validation](images/email_verification_page.png)
+![Email Authentication Sent](images/email_verification_page_1.png)
+![Account finally active](images/email_verification_page_1.png)
 
 ### Login Flow
 
 The app looks up the submitted username in the database, checks the password against the stored hash, and confirms that the email has been verified. If the user is logging in with a temporary recovery password, they are redirected to the change password screen before reaching the main page.
 
-![Login Screen - User Ready to use credentials](images\login_page.png)
+![Login Screen - User Ready to use credentials](images/login_page.png)
 
 ### Password Recovery Flow
 
 The user submits their email address. If it exists, the app generates a random temporary password, hashes it, replaces the current password hash in the database, and marks the account with `must_reset_password = 1`. The username and temporary password are then sent by email. The app always returns a generic message — *"If that email exists, you will receive recovery instructions."* — to avoid exposing whether an email is registered.
 
-![Forgotten or compromised Password](images\password_recovery.png)
-![Check if the email is registered on the Database](images\password_recovery_1.png)
-![Temporary Password Delivered](images\password_recovery_2.png)
+![Forgotten or compromised Password](images/password_recovery.png)
+![Check if the email is registered on the Database](images/password_recovery_1.png)
+![Temporary Password Delivered](images/password_recovery_2.png)
 
 ### Forced Password Reset Flow
 
 After logging in with a temporary password, the user is redirected to a change password page. They must provide the current temporary password, a new password, and a confirmation. The new password goes through the same validation rules as registration. On success, the new hash is saved and `must_reset_password` is reset to `0`.
 
-![Temporary Password Force Change](images\password_recovery_3.png)
+![Temporary Password Force Change](images/password_recovery_3.png)
 
 ### Main Page
 
 The main page is protected by Flask sessions. Any unauthenticated access attempt redirects to the login page. The page includes an animated futuristic interface and a logout option.
 
-![Main Look of the page ;)](images\main_page.png)
+![Main Look of the page ;)](images/main_page.png)
 
 ---
 
