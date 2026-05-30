@@ -12,8 +12,8 @@ SecureGate is a Flask-based authentication web application that implements a com
 - Password hashing with Werkzeug before storing credentials
 - SQLite database for local storage
 - Email verification required before login
-- Password recovery via temporary password sent by email
-- Forced password reset after using a temporary password
+- Password recovery via an expiring one-time link
+- CSRF protection and rate limiting for authentication forms
 - Protected main page accessible only after login
 - Logout functionality
 - Dark mode interface with turquoise neon animations and smooth page-entry transitions
@@ -41,7 +41,7 @@ The user submits a username, email, password, and password confirmation. The app
 
 ### Email Verification Flow
 
-After registration, a secure token is generated and a verification link is sent to the user's email. The link points to `/verify-email/<token>`. When opened, the app checks the token and, if valid, updates the account to `email_verified = 1` and clears the token.
+After registration, a secure token and an 8-digit code are generated. The link points to `/verify-email/<token>`. The code expires after 10 minutes and is invalidated after 3 failed attempts.
 
 ![Account Validation](static/images/email_verification_page.png)
 ![Email Authentication Sent](static/images/email_verification_page_1.png)
@@ -49,21 +49,21 @@ After registration, a secure token is generated and a verification link is sent 
 
 ### Login Flow
 
-The app looks up the submitted username in the database, checks the password against the stored hash, and confirms that the email has been verified. If the user is logging in with a temporary recovery password, they are redirected to the change password screen before reaching the main page.
+The app looks up the submitted username in the database, checks the password against the stored hash, and confirms that the email has been verified. Failed attempts are limited by IP and accounts are locked temporarily after repeated failures.
 
 ![Login Screen - User Ready to use credentials](static/images/login_page.png)
 
 ### Password Recovery Flow
 
-The user submits their email address. If it exists, the app generates a random temporary password, hashes it, replaces the current password hash in the database, and marks the account with `must_reset_password = 1`. The username and temporary password are then sent by email. The app always returns a generic message — *"If that email exists, you will receive recovery instructions."* — to avoid exposing whether an email is registered.
+The user submits their email address. If it exists, the app generates a one-time reset token and sends an expiring link. Passwords are never sent by email. The app always returns a generic message — *"If that email exists, you will receive recovery instructions."* — to avoid exposing whether an email is registered.
 
 ![Forgotten or compromised Password](static/images/password_recovery.png)
 ![Check if the email is registered on the Database](static/images/password_recovery_1.png)
 ![Temporary Password Delivered](static/images/password_recovery_2.png)
 
-### Forced Password Reset Flow
+### Password Reset Flow
 
-After logging in with a temporary password, the user is redirected to a change password page. They must provide the current temporary password, a new password, and a confirmation. The new password goes through the same validation rules as registration. On success, the new hash is saved and `must_reset_password` is reset to `0`.
+The reset link expires after 15 minutes and can only be used once. The user chooses a new password and confirmation. On success, the new hash is saved and the reset token is cleared.
 
 ![Temporary Password Force Change](static/images/password_recovery_3.png)
 
@@ -87,6 +87,11 @@ SQLite is used as the local database. The main user table stores the following f
 | `password_hash` | Hashed password |
 | `email_verified` | `0` unverified / `1` verified |
 | `verification_token` | Token for email verification |
+| `verification_code_expires` | Expiration for the email verification code |
+| `reset_token_hash` | Hash of the one-time password reset token |
+| `reset_token_expires` | Expiration for the password reset token |
+| `failed_login_attempts` | Consecutive failed login count |
+| `locked_until` | Temporary account lock expiration |
 | `must_reset_password` | `1` if a forced reset is required |
 
 ---
@@ -96,9 +101,11 @@ SQLite is used as the local database. The main user table stores the following f
 Before running the app, define the following environment variables:
 
 ```bash
-$env:EMAIL_USER="your_email@gmail.com"
-$env:EMAIL_PASSWORD="your_google_app_password"
-$env:SECRET_KEY="your_secret_key"
+$env:SMTP_USERNAME="your_email@gmail.com"
+$env:SMTP_PASSWORD="your_google_app_password"
+$env:LOGIN_WEB_SECRET_KEY="generate_a_long_random_secret"
+$env:LAPLACE_DB_PATH="C:\path\outside\web-root\laplace-data\users.db"
+$env:SESSION_COOKIE_SECURE="0" # local HTTP only; keep 1 in production
 ```
 
 > If using Gmail, `EMAIL_PASSWORD` must be a **Google App Password**, not your regular Gmail password.
@@ -129,9 +136,9 @@ Open the app at: [http://127.0.0.1:5000](http://127.0.0.1:5000)
 
 ## Security Notes
 
-This project applies several important authentication practices: passwords are never stored as plain text, email verification is required before login, temporary passwords are randomly generated, users must reset their password after recovery, and generic recovery messages avoid exposing registered emails.
+This project applies several important authentication practices: passwords are never stored as plain text or sent by email, email verification is required before login, reset links expire after 15 minutes, verification codes expire after 10 minutes, CSRF tokens protect state changes, login and recovery endpoints are rate limited, and generic recovery messages avoid exposing registered emails.
 
-For a production deployment, the following should also be added: HTTPS, strong secret key management, rate limiting for login and recovery attempts, CSRF protection, token expiration, environment variable management via `.env`, a production-grade database, and a production WSGI server.
+For production, use HTTPS, a production WSGI server, environment-managed secrets, and a database stored outside the web root. PostgreSQL is recommended when the portal moves beyond a single-server deployment.
 
 ---
 
@@ -150,9 +157,6 @@ data/*.db
 ## Future Improvements
 
 - Rename Spanish internal variable names to English
-- Add CSRF protection
-- Add token expiration for email verification and password recovery
-- Add rate limiting
 - Add stronger password breach checking (e.g., HaveIBeenPwned API)
 - Add HTML email templates
 - Add user profile page

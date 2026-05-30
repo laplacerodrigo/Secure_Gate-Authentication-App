@@ -1,48 +1,659 @@
 <!DOCTYPE html>
-<html>
+<html lang="{{ language }}">
 <head>
-    <link rel="icon" href="{{ url_for('static', filename='images/logo.ico') }}">
-    <title>Main Page</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="{{ url_for('media_file', filename='favicon.png') }}">
+    <title>{{ t("portal.brand") }} - {{ t("portal.client_portal") }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .status-paid { background: #d1fae5; color: #065f46; }
+        .status-unpaid { background: #fef3c7; color: #92400e; }
+        .status-cancelled { background: #fee2e2; color: #991b1b; }
+        .status-partial { background: #dbeafe; color: #1e40af; }
+        .pagination-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid #e5e7eb;
+        }
+        .pagination-btn {
+            padding: 6px 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            color: #374151;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .pagination-btn:hover { background: #f3f4f6; }
+        .pagination-btn.disabled {
+            color: #9ca3af;
+            pointer-events: none;
+            border-color: #e5e7eb;
+        }
+        .pagination-info {
+            font-size: 13px;
+            color: #526371;
+        }
+        .row-actions { display: flex; align-items: center; gap: 8px; }
+    </style>
 </head>
-<body>
+<body class="portal-body">
+    {% set menu_items = [
+        ("overview", t("nav.overview"), "LayoutDashboard"),
+        ("subscription", t("nav.subscription"), "BadgeCheck"),
+        ("contracts", t("nav.contracts"), "FileSignature"),
+        ("invoices", t("nav.invoices"), "ReceiptText"),
+        ("tickets", t("nav.tickets"), "Headset"),
+        ("projects", t("nav.projects"), "ListChecks"),
+        ("documents", t("nav.documents"), "FolderOpen"),
+        ("settings", t("nav.settings"), "Settings")
+    ] %}
+    {% set nav_titles = {
+        "overview": t("nav.overview"),
+        "subscription": t("nav.subscription"),
+        "contracts": t("nav.contracts"),
+        "invoices": t("nav.invoices"),
+        "tickets": t("nav.tickets"),
+        "projects": t("nav.projects"),
+        "documents": t("nav.documents"),
+        "settings": t("nav.settings")
+    } %}
+    {% set ticket_category_labels = {
+        "Website Support": t("tickets.category.website"),
+        "Subscription": t("tickets.category.subscription"),
+        "Billing": t("tickets.category.billing"),
+        "Technical Issue": t("tickets.category.technical"),
+        "General Support": t("tickets.category.general")
+    } %}
+    {% set ticket_priority_labels = {
+        "Normal": t("tickets.priority.normal"),
+        "High": t("tickets.priority.high"),
+        "Urgent": t("tickets.priority.urgent")
+    } %}
+    {% set document_type_labels = {
+        "Proposal": t("documents.proposal"),
+        "Invoice": t("documents.invoice"),
+        "Contract": t("contracts.fallback")
+    } %}
+    {% macro lucide_icon(name) -%}
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            {%- if name == "LayoutDashboard" -%}
+                <rect width="7" height="9" x="3" y="3" rx="1"></rect>
+                <rect width="7" height="5" x="14" y="3" rx="1"></rect>
+                <rect width="7" height="9" x="14" y="12" rx="1"></rect>
+                <rect width="7" height="5" x="3" y="16" rx="1"></rect>
+            {%- elif name == "BadgeCheck" -%}
+                <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.78 4.78 4 4 0 0 1-6.74 0 4 4 0 0 1-4.78-4.78 4 4 0 0 1 0-6.75Z"></path>
+                <path d="m9 12 2 2 4-4"></path>
+            {%- elif name == "FileSignature" -%}
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"></path>
+                <path d="M14 2v6h6"></path>
+                <path d="M10 18c.7-1.2 1.4-2 2.1-2 1.1 0 1.2 2 2.4 2 .5 0 1-.3 1.5-1"></path>
+            {%- elif name == "ReceiptText" -%}
+                <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"></path>
+                <path d="M8 7h8"></path>
+                <path d="M8 11h8"></path>
+                <path d="M8 15h5"></path>
+            {%- elif name == "Headset" -%}
+                <path d="M3 11a9 9 0 0 1 18 0"></path>
+                <path d="M21 15v2a2 2 0 0 1-2 2h-2"></path>
+                <path d="M3 15v-4"></path>
+                <path d="M21 15v-4"></path>
+                <path d="M7 15v4"></path>
+                <path d="M17 15v4"></path>
+                <path d="M12 19h5"></path>
+            {%- elif name == "ListChecks" -%}
+                <path d="m3 7 2 2 4-4"></path>
+                <path d="m3 17 2 2 4-4"></path>
+                <path d="M13 6h8"></path>
+                <path d="M13 12h8"></path>
+                <path d="M13 18h8"></path>
+            {%- elif name == "FolderOpen" -%}
+                <path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6A2 2 0 0 1 18.46 20H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v2"></path>
+            {%- elif name == "Settings" -%}
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+            {%- elif name == "LogOut" -%}
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" x2="9" y1="12" y2="12"></line>
+            {%- endif -%}
+        </svg>
+    {%- endmacro %}
 
-    <header class="app-header">
-        <h1>SecureGate</h1>
-        <a href="{{ url_for('logout') }}">Log Out</a>
-    </header>
+    <button class="mobile-sidebar-toggle" type="button" data-sidebar-toggle aria-label="{{ t('portal.open_menu') }}" aria-expanded="false">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+    <div class="sidebar-overlay" data-sidebar-close></div>
 
-    <main class="main-page">
-        <div class="main-grid"></div>
-        <div class="main-scan"></div>
+    <div class="client-shell">
+        <aside class="client-sidebar" id="client-sidebar" aria-label="{{ t('portal.client_portal') }}">
+            <a class="client-brand" href="{{ url_for('main_page') }}">
+                <img class="client-brand-logo" src="{{ url_for('static', filename='images/laplace-logo-transparent.png') }}" alt="{{ t('portal.brand') }}">
+                <img class="client-brand-favicon" src="{{ url_for('media_file', filename='favicon.png') }}" alt="" aria-hidden="true">
+            </a>
 
-        <section class="main-panel">
-            <div class="energy-core">
-                <span></span>
-                <span></span>
-                <span></span>
+            <div class="client-company">
+                <span>{{ t("portal.client_portal") }}</span>
+                <strong>{{ company_name }}</strong>
             </div>
 
-            <h1 class="glitch-title" data-text="Welcome to my project">Welcome to my project</h1>
-            <p class="main-subtitle">Your session is active</p>
+            <nav class="client-nav">
+                {% for key, label, icon in menu_items %}
+                    <a class="client-nav-item {% if active_view == key %}is-active{% endif %}" href="{{ url_for('main_page', view=key) }}">
+                        <span class="nav-icon">{{ lucide_icon(icon) }}</span>
+                        <span class="nav-label">{{ label }}</span>
+                    </a>
+                {% endfor %}
+            </nav>
 
-            <div class="status-board">
-                <div>
-                    <strong>System</strong>
-                    <span>Online</span>
+            <form method="POST" action="{{ url_for('logout') }}">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                <button class="client-logout" type="submit">
+                <div class="logout-icon-wrap">
+                    <svg class="logout-icon-svg" viewBox="0 0 512 512" fill="white">
+                        <path d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"></path>
+                    </svg>
                 </div>
-                <div>
-                    <strong>Access</strong>
-                    <span>Verified</span>
-                </div>
-                <div>
-                    <strong>Mode</strong>
-                    <span>Secure</span>
-                </div>
-            </div>
-        </section>
-    </main>
+                <div class="logout-text">{{ t("portal.logout") }}</div>
+                </button>
+            </form>
+        </aside>
 
+        <main class="client-main">
+            <section class="client-topline">
+                <div>
+                    <p class="eyebrow">{{ t("portal.brand") }}</p>
+                    <h1>{{ nav_titles.get(active_view, t("nav.overview")) }}</h1>
+                </div>
+                <div class="client-user-chip">
+                    <span class="user-avatar">
+                        {% if user["profile_photo"] %}
+                            <img src="{{ url_for('static', filename=user['profile_photo']) }}" alt="{{ user['display_name'] or user['usuario'] }}">
+                        {% else %}
+                            {{ (user["display_name"] or user["usuario"])[:2].upper() }}
+                        {% endif %}
+                    </span>
+                    <div>
+                        <strong>{{ user["display_name"] or user["usuario"] }}</strong>
+                        <small>{{ user["email"] }}</small>
+                    </div>
+                </div>
+            </section>
+
+            {% if active_view == "overview" %}
+                <section class="portal-grid stats-grid">
+                    <article class="metric-card">
+                        <span>{{ t("metrics.projects") }}</span>
+                        <strong>{{ portal.totals.open_projects }}</strong>
+                        <small>{{ t("metrics.projects_help") }}</small>
+                    </article>
+                    <article class="metric-card">
+                        <span>{{ t("metrics.contracts") }}</span>
+                        <strong>{{ portal.totals.contracts }}</strong>
+                        <small>{{ t("metrics.contracts_help") }}</small>
+                    </article>
+                    <article class="metric-card">
+                        <span>{{ t("metrics.open_tickets") }}</span>
+                        <strong>{{ portal.totals.open_tickets }}</strong>
+                        <small>{{ t("metrics.open_tickets_help") }}</small>
+                    </article>
+                    <article class="metric-card">
+                        <span>{{ t("metrics.invoice_total") }}</span>
+                        <strong>{{ portal.totals.balance }}</strong>
+                        <small>{{ t("metrics.invoice_total_help") }}</small>
+                    </article>
+                </section>
+
+                <section class="portal-grid two-column">
+                    <article class="portal-panel">
+                        <div class="panel-heading">
+                            <h2>{{ t("overview.subscription") }}</h2>
+                            <a href="{{ url_for('main_page', view='subscription') }}">{{ t("overview.view") }}</a>
+                        </div>
+                        {% if portal.subscription %}
+                            <div class="summary-line">
+                                <strong>{{ portal.subscription.title }}</strong>
+                                <span>{{ portal.subscription.status }}</span>
+                            </div>
+                            <p class="muted">{{ t("overview.renewal") }}: {{ portal.subscription.renewal }}</p>
+                        {% else %}
+                            <p class="empty-state">{{ t("overview.no_subscription") }}</p>
+                        {% endif %}
+                    </article>
+
+                    <article class="portal-panel">
+                        <div class="panel-heading">
+                            <h2>{{ t("overview.recent_tickets") }}</h2>
+                            <a href="{{ url_for('main_page', view='tickets') }}">{{ t("overview.open_support") }}</a>
+                        </div>
+                        {% if portal.tickets %}
+                            {% for ticket in portal.tickets[:3] %}
+                                <div class="list-row">
+                                    <div>
+                                        <strong>{{ ticket["subject"] }}</strong>
+                                        <small>{{ ticket_category_labels.get(ticket["category"], ticket["category"]) }} · {{ ticket_priority_labels.get(ticket["priority"], ticket["priority"]) }}</small>
+                                    </div>
+                                    <span class="status-pill">{{ status_text(ticket["status"]) }}</span>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="empty-state">{{ t("overview.no_tickets") }}</p>
+                        {% endif %}
+                    </article>
+                </section>
+            {% endif %}
+
+            {% if active_view == "subscription" %}
+                <section class="portal-panel">
+                    <h2>{{ t("subscription.summary") }}</h2>
+                    {% if portal.subscription %}
+                        <div class="detail-grid">
+                            <div><span>{{ t("subscription.plan") }}</span><strong>{{ portal.subscription.title }}</strong></div>
+                            <div><span>{{ t("subscription.status") }}</span><strong>{{ status_text(portal.subscription.status) }}</strong></div>
+                            <div><span>{{ t("subscription.next") }}</span><strong>{{ portal.subscription.renewal }}</strong></div>
+                        </div>
+                    {% else %}
+                        <p class="empty-state">{{ t("subscription.empty") }}</p>
+                    {% endif %}
+                </section>
+            {% endif %}
+
+            {% if active_view == "contracts" %}
+                <section class="portal-panel">
+                    <h2>{{ t("contracts.title") }}</h2>
+                    {% if portal.contracts %}
+                        {% for contract in portal.contracts %}
+                            <div class="list-row">
+                                <div>
+                                    <strong>{{ contract.get("ref", t("contracts.fallback")) }}</strong>
+                                    <small>{{ parse_date(contract.get("date_start") or contract.get("created_at")) }}</small>
+                                </div>
+                                <div class="row-actions">
+                                    <span class="status-pill">{{ status_text(contract.get("status")) }}</span>
+                                    <a class="button secondary small" href="{{ url_for('view_contract', contract_id=contract.get('id')) }}" target="_blank">{{ t("contracts.see_contract") }}</a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="empty-state">{{ t("contracts.empty") }}</p>
+                    {% endif %}
+                </section>
+            {% endif %}
+
+            {% if active_view == "invoices" %}
+                <section class="portal-panel">
+                    <h2>{{ t("invoices.title") }}</h2>
+                    {% if portal.invoices %}
+                        {% for invoice in portal.invoices %}
+                            {% set pay_status = invoice_status(invoice) %}
+                            <div class="list-row">
+                                <div>
+                                    <strong>{{ invoice.get("ref", t("invoices.fallback")) }}</strong>
+                                    <small>{{ parse_date(invoice.get("date_issued")) }}</small>
+                                </div>
+                                <div class="row-actions">
+                                    <strong>{{ money(invoice.get("total")) }}</strong>
+                                    <span class="status-pill {% if pay_status == t('invoice.status_paid') %}status-paid{% elif pay_status == t('invoice.status_cancelled') %}status-cancelled{% elif pay_status == t('invoice.status_partial') %}status-partial{% else %}status-unpaid{% endif %}">{{ pay_status }}</span>
+                                    <a class="button secondary small" href="{{ url_for('view_invoice', invoice_id=invoice.get('id')) }}" target="_blank">{{ t("invoices.see_invoice") }}</a>
+                                </div>
+                            </div>
+                        {% endfor %}
+
+                        {% if portal.invoice_pagination and portal.invoice_pagination.total_pages > 1 %}
+                        <div class="pagination-bar">
+                            {% if portal.invoice_pagination.page > 1 %}
+                                <a class="pagination-btn" href="{{ url_for('main_page', view='invoices', page=portal.invoice_pagination.page - 1) }}">← {{ t("pagination.previous") }}</a>
+                            {% else %}
+                                <span class="pagination-btn disabled">← {{ t("pagination.previous") }}</span>
+                            {% endif %}
+                            <span class="pagination-info">{{ t("pagination.page") }} {{ portal.invoice_pagination.page }} {{ t("pagination.of") }} {{ portal.invoice_pagination.total_pages }}</span>
+                            {% if portal.invoice_pagination.page < portal.invoice_pagination.total_pages %}
+                                <a class="pagination-btn" href="{{ url_for('main_page', view='invoices', page=portal.invoice_pagination.page + 1) }}">{{ t("pagination.next") }} →</a>
+                            {% else %}
+                                <span class="pagination-btn disabled">{{ t("pagination.next") }} →</span>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <p class="empty-state">{{ t("invoices.empty") }}</p>
+                    {% endif %}
+                </section>
+            {% endif %}
+
+            {% if active_view == "tickets" %}
+                <section class="portal-grid two-column tickets-layout">
+                    <article class="portal-panel">
+                        <h2>{{ t("tickets.submit") }}</h2>
+                        {% if request.args.get("created") %}
+                            <p class="success-message">{{ t("tickets.created") }}</p>
+                        {% endif %}
+                        <form class="portal-form" method="POST" action="{{ url_for('create_ticket') }}">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                            <label>
+                                {{ t("tickets.subject") }}
+                                <input type="text" name="subject" placeholder="{{ t('tickets.subject_placeholder') }}" required>
+                            </label>
+                            <label>
+                                {{ t("tickets.category") }}
+                                <select name="category">
+                                    <option value="Website Support">{{ t("tickets.category.website") }}</option>
+                                    <option value="Subscription">{{ t("tickets.category.subscription") }}</option>
+                                    <option value="Billing">{{ t("tickets.category.billing") }}</option>
+                                    <option value="Technical Issue">{{ t("tickets.category.technical") }}</option>
+                                    <option value="General Support">{{ t("tickets.category.general") }}</option>
+                                </select>
+                            </label>
+                            <label>
+                                {{ t("tickets.priority") }}
+                                <select name="priority">
+                                    <option value="Normal">{{ t("tickets.priority.normal") }}</option>
+                                    <option value="High">{{ t("tickets.priority.high") }}</option>
+                                    <option value="Urgent">{{ t("tickets.priority.urgent") }}</option>
+                                </select>
+                            </label>
+                            <label>
+                                {{ t("tickets.message") }}
+                                <textarea name="message" placeholder="{{ t('tickets.message_placeholder') }}" required></textarea>
+                            </label>
+                            <button type="submit">{{ t("tickets.submit_button") }}</button>
+                        </form>
+                    </article>
+
+                    <article class="portal-panel">
+                        <h2>{{ t("tickets.your") }}</h2>
+                        {% if portal.tickets %}
+                            {% for ticket in portal.tickets %}
+                                <div class="ticket-card">
+                                    <div>
+                                        <strong>{{ ticket["ticket_number"] }} · {{ ticket["subject"] }}</strong>
+                                        <span class="status-pill">{{ status_text(ticket["status"]) }}</span>
+                                    </div>
+                                    <small>{{ ticket_category_labels.get(ticket["category"], ticket["category"]) }} · {{ ticket_priority_labels.get(ticket["priority"], ticket["priority"]) }} · {{ ticket["created_at"][:10] }}</small>
+                                    <p>{{ ticket["message"] }}</p>
+                                    {% if ticket["client_notes"] %}
+                                        <p class="muted">{{ ticket["client_notes"] }}</p>
+                                    {% endif %}
+                                    {% if ticket["resolution_notes"] and ticket["status"] == "Closed and resolved" %}
+                                        <p class="muted"><strong>Resolution:</strong> {{ ticket["resolution_notes"] }}</p>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="empty-state">{{ t("overview.no_tickets") }}</p>
+                        {% endif %}
+                    </article>
+                </section>
+            {% endif %}
+
+            {% if active_view == "projects" %}
+                <section class="portal-panel">
+                    <h2>{{ t("projects.title") }}</h2>
+                    {% if portal.projects %}
+                        {% for project in portal.projects %}
+                            <div class="list-row">
+                                <div>
+                                    <strong>{{ project.get("title") or project.get("ref") }}</strong>
+                                    <small>{{ project.get("ref") }} · {{ parse_date(project.get("date_start") or project.get("date_creation")) }}</small>
+                                </div>
+                                <span class="status-pill">{{ status_text(project.get("status") or project.get("fk_statut")) }}</span>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="empty-state">{{ t("projects.empty") }}</p>
+                    {% endif %}
+                </section>
+            {% endif %}
+
+            {% if active_view == "documents" %}
+                <section class="portal-panel">
+                    <h2>{{ t("documents.title") }}</h2>
+                    {% if portal.documents %}
+                        {% for document in portal.documents %}
+                            <div class="list-row">
+                                <div>
+                                    <strong>{{ document.name }}</strong>
+                                    <small>{{ document_type_labels.get(document.type, document.type) }} · {{ document.date }}</small>
+                                </div>
+                                <span class="status-pill">{{ status_text(document.status) }}</span>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="empty-state">{{ t("documents.empty") }}</p>
+                    {% endif %}
+                </section>
+            {% endif %}
+
+            {% if active_view == "settings" %}
+                <section class="portal-panel settings-panel">
+                    <div class="panel-heading">
+                        <h2>{{ t("settings.title") }}</h2>
+                    </div>
+                    {% if request.args.get("saved") %}
+                        <p class="success-message">{{ t("settings.saved") }}</p>
+                    {% endif %}
+                    <form class="portal-form settings-form" method="POST" action="{{ url_for('update_settings') }}" enctype="multipart/form-data">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="settings_action" value="profile">
+                        <div class="settings-grid">
+                            <div class="profile-photo-field" data-photo-dropzone>
+                                <span class="settings-avatar">
+                                    {% if user["profile_photo"] %}
+                                        <img src="{{ url_for('static', filename=user['profile_photo']) }}" alt="{{ user['display_name'] or user['usuario'] }}">
+                                    {% else %}
+                                        {{ (user["display_name"] or user["usuario"])[:2].upper() }}
+                                    {% endif %}
+                                </span>
+                                <label class="photo-upload">
+                                    <span class="photo-upload-title">{{ t("settings.profile_photo") }}</span>
+                                    <span class="photo-upload-box">
+                                        <strong>{{ t("settings.drop_image") }}</strong>
+                                        <small>{{ t("settings.choose_image") }}</small>
+                                        <em data-file-name>{{ t("settings.no_file") }}</em>
+                                    </span>
+                                    <input type="file" name="profile_photo" accept="image/png,image/jpeg,image/webp,image/gif" data-photo-input>
+                                </label>
+                            </div>
+                            <label>
+                                {{ t("settings.display_name") }}
+                                <input type="text" name="display_name" value="{{ user['display_name'] or user['usuario'] }}" placeholder="{{ t('settings.display_placeholder') }}">
+                            </label>
+                            <label>
+                                {{ t("settings.company") }}
+                                <input type="text" name="company_name" value="{{ company_name }}" placeholder="{{ t('settings.company_placeholder') }}">
+                            </label>
+                            <label>
+                                {{ t("settings.whatsapp") }}
+                                <input type="tel" name="whatsapp" value="{{ user['whatsapp'] or '' }}" placeholder="+503 7000 0000">
+                            </label>
+                            <label>
+                                {{ t("settings.account_email") }}
+                                <input type="email" value="{{ user['email'] }}" disabled>
+                            </label>
+                            <label>
+                                {{ t("settings.language") }}
+                                <select name="language">
+                                    <option value="en" {% if language == "en" %}selected{% endif %}>{{ t("settings.language_en") }}</option>
+                                    <option value="es" {% if language == "es" %}selected{% endif %}>{{ t("settings.language_es") }}</option>
+                                </select>
+                            </label>
+                        </div>
+
+                        <fieldset class="notification-box">
+                            <legend>{{ t("settings.notifications") }}</legend>
+                            <label class="check-option">
+                                <input type="checkbox" name="notify_email" {% if user["notify_email"] != 0 %}checked{% endif %}>
+                                <span>{{ t("settings.notify_email") }}</span>
+                            </label>
+                            <label class="check-option">
+                                <input type="checkbox" name="notify_tickets" {% if user["notify_tickets"] != 0 %}checked{% endif %}>
+                                <span>{{ t("settings.notify_tickets") }}</span>
+                            </label>
+                            <label class="check-option">
+                                <input type="checkbox" name="notify_projects" {% if user["notify_projects"] != 0 %}checked{% endif %}>
+                                <span>{{ t("settings.notify_projects") }}</span>
+                            </label>
+                            <label class="check-option">
+                                <input type="checkbox" name="notify_invoices" {% if user["notify_invoices"] != 0 %}checked{% endif %}>
+                                <span>{{ t("settings.notify_invoices") }}</span>
+                            </label>
+                        </fieldset>
+
+                        <button type="submit">{{ t("settings.save_profile") }}</button>
+                    </form>
+                </section>
+
+                <section class="portal-panel password-panel">
+                    <h2>{{ t("settings.change_password") }}</h2>
+                    {% if request.args.get("password_saved") %}
+                        <p class="success-message">{{ t("settings.password_saved") }}</p>
+                    {% endif %}
+                    {% if request.args.get("password_error") %}
+                        <p class="error-message">
+                            {% if request.args.get("password_error") == "current" %}
+                                {{ t("settings.password_current_error") }}
+                            {% else %}
+                                {{ t("settings.password_invalid_error") }}
+                            {% endif %}
+                        </p>
+                    {% endif %}
+                    <form class="portal-form settings-form" method="POST" action="{{ url_for('update_settings') }}">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="settings_action" value="password">
+                        <div class="settings-grid">
+                            <label>
+                                {{ t("settings.current_password") }}
+                                <input type="password" name="current_password" autocomplete="current-password" required>
+                            </label>
+                            <label>
+                                {{ t("settings.new_password") }}
+                                <input type="password" name="new_password" autocomplete="new-password" required>
+                            </label>
+                            <label>
+                                {{ t("settings.confirm_password") }}
+                                <input type="password" name="confirm_password" autocomplete="new-password" required>
+                            </label>
+                        </div>
+                        <button type="submit">{{ t("settings.update_password") }}</button>
+                    </form>
+                </section>
+            {% endif %}
+        </main>
+    </div>
+
+    <script>
+        (function () {
+            const body = document.body;
+            const toggles = document.querySelectorAll("[data-sidebar-toggle]");
+            const closeTargets = document.querySelectorAll("[data-sidebar-close], .client-nav-item");
+            const mobileQuery = window.matchMedia("(max-width: 840px)");
+
+            function syncAria() {
+                const isOpen = body.classList.contains("sidebar-open");
+                toggles.forEach((toggle) => {
+                    toggle.setAttribute("aria-expanded", String(isOpen));
+                    toggle.setAttribute("aria-label", isOpen ? {{ t('portal.close_menu')|tojson }} : {{ t('portal.open_menu')|tojson }});
+                });
+            }
+
+            function resetSidebarState() {
+                body.classList.remove("sidebar-collapsed");
+                syncAria();
+            }
+
+            toggles.forEach((toggle) => {
+                toggle.addEventListener("click", () => {
+                    if (mobileQuery.matches) {
+                        body.classList.toggle("sidebar-open");
+                    }
+                    syncAria();
+                });
+            });
+
+            closeTargets.forEach((target) => {
+                target.addEventListener("click", () => {
+                    if (mobileQuery.matches) {
+                        body.classList.remove("sidebar-open");
+                        syncAria();
+                    }
+                });
+            });
+
+            mobileQuery.addEventListener("change", () => {
+                body.classList.remove("sidebar-open");
+                resetSidebarState();
+            });
+
+            resetSidebarState();
+        })();
+
+        (function () {
+            const dropzone = document.querySelector("[data-photo-dropzone]");
+            const input = document.querySelector("[data-photo-input]");
+            if (!dropzone || !input) {
+                return;
+            }
+
+            const fileName = dropzone.querySelector("[data-file-name]");
+            const avatar = dropzone.querySelector(".settings-avatar");
+
+            function previewFile(file) {
+                if (!file || !file.type.startsWith("image/")) {
+                    return;
+                }
+
+                if (fileName) {
+                    fileName.textContent = file.name;
+                }
+
+                const reader = new FileReader();
+                reader.onload = () => {
+                    avatar.innerHTML = "";
+                    const image = document.createElement("img");
+                    image.src = reader.result;
+                    image.alt = {{ t('settings.preview_alt')|tojson }};
+                    avatar.appendChild(image);
+                };
+                reader.readAsDataURL(file);
+            }
+
+            input.addEventListener("change", () => {
+                previewFile(input.files && input.files[0]);
+            });
+
+            ["dragenter", "dragover"].forEach((eventName) => {
+                dropzone.addEventListener(eventName, (event) => {
+                    event.preventDefault();
+                    dropzone.classList.add("is-dragging");
+                });
+            });
+
+            ["dragleave", "drop"].forEach((eventName) => {
+                dropzone.addEventListener(eventName, (event) => {
+                    event.preventDefault();
+                    dropzone.classList.remove("is-dragging");
+                });
+            });
+
+            dropzone.addEventListener("drop", (event) => {
+                const file = event.dataTransfer.files && event.dataTransfer.files[0];
+                if (!file || !file.type.startsWith("image/")) {
+                    return;
+                }
+
+                const transfer = new DataTransfer();
+                transfer.items.add(file);
+                input.files = transfer.files;
+                previewFile(file);
+            });
+        })();
+    </script>
 </body>
 </html>
-

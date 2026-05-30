@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="{{ url_for('static', filename='images/logo.ico') }}">
+    <title>Verification Link Error</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2">
+</head>
+<body>
+
+    <main class="auth-page">
+        <div class="lightning-layer" aria-hidden="true">
+            <span class="lightning lightning-one"></span>
+            <span class="lightning lightning-two"></span>
+            <span class="lightning lightning-three"></span>
+        </div>
+
+        <section class="auth-card error-card">
+            <div class="error-bot" aria-hidden="true">
+                <div class="error-bot-head">
+                    <span class="error-eye"></span>
+                    <span class="error-eye"></span>
+                </div>
+                <div class="error-bot-body">
+                    <span class="error-alert"></span>
+                </div>
+            </div>
+
+            <h1>Verification Failed</h1>
+            <p class="auth-subtitle">
+                This verification link is invalid or has already been used.
+            </p>
+
+            <p class="error-detail">
+                Try logging in, or request a new verification email.
+            </p>
+
+            <div class="auth-links">
+                <a href="{{ url_for('login') }}">Go to Login</a>
+                <a href="{{ url_for('registro') }}">Create a New Account</a>
+            </div>
+        </section>
+    </main>
+
+</body>
+</html>

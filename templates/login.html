@@ -1,7 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <link rel="icon" href="{{ url_for('static', filename='images/logo.ico') }}">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="{{ url_for('media_file', filename='favicon.png') }}">
     <title>Login</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
@@ -16,10 +18,12 @@
             </div>
 
         <section class="auth-card">
+            <img class="auth-logo" src="{{ url_for('static', filename='images/laplace-logo-transparent.png') }}" alt="Laplace Electric">
             <h1>Login</h1>
             <p class="auth-subtitle">Access your account</p>
 
             <form method="POST">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                 <input type="text" name="usuario" placeholder="Username">
                 <input type="password" name="password" placeholder="Password">
 

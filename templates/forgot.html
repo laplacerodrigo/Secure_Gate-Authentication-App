@@ -1,6 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" href="{{ url_for('static', filename='images/logo.ico') }}">
     <title>Recover Account</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
@@ -19,6 +21,7 @@
             <p class="auth-subtitle">Enter your email to receive recovery instructions</p>
 
             <form method="POST">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                 <input type="email" name="email" placeholder="Email address">
 
                 <button type="submit">Continue</button>

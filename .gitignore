@@ -3,3 +3,6 @@ __pycache__/
 *.pyc
 .env
 data/*.db
+*.log
+static/uploads/
+Reporte Del Proyecto.docx

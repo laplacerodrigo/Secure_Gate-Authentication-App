@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="{{ url_for('static', filename='images/logo.ico') }}">
+    <title>Enter Verification Code</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3">
+</head>
+<body>
+
+    <main class="auth-page">
+        <div class="lightning-layer" aria-hidden="true">
+            <span class="lightning lightning-one"></span>
+            <span class="lightning lightning-two"></span>
+            <span class="lightning lightning-three"></span>
+        </div>
+
+        <section class="auth-card verification-card">
+            <div class="verification-orbit" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+
+            <h1>Verify Email</h1>
+            <p class="auth-subtitle">
+                Enter the 8-digit code sent to your email.
+            </p>
+
+            <form method="POST" class="verification-form">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                <input
+                    class="verification-code-input"
+                    type="text"
+                    name="verification_code"
+                    placeholder="00000000"
+                    inputmode="numeric"
+                    pattern="[0-9]{8}"
+                    maxlength="8"
+                    autocomplete="one-time-code"
+                    required
+                >
+
+                <button type="submit">Activate Account</button>
+
+                {% if error %}
+                    <p id="error-message" class="error-message">{{ error }}</p>
+                {% endif %}
+            </form>
+
+            <div class="auth-links">
+                <a href="{{ url_for('login') }}">Back to Login</a>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const codeInput = document.querySelector(".verification-code-input");
+
+        codeInput.addEventListener("input", function() {
+            this.value = this.value.replace(/\D/g, "").slice(0, 8);
+        });
+
+        setTimeout(function() {
+            const errorMessage = document.getElementById("error-message");
+
+            if (errorMessage) {
+                errorMessage.style.display = "none";
+            }
+        }, 3000);
+    </script>
+
+</body>
+</html>

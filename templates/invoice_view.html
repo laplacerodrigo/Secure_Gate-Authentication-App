@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="{{ language }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ t("invoice.document_title") }} {{ invoice.get("ref", "") }} | {{ t("portal.brand") }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .invoice-document {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 48px 40px;
+            background: #fff;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            color: #111827;
+            line-height: 1.6;
+        }
+        .invoice-document .inv-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 36px;
+            padding-bottom: 24px;
+            border-bottom: 2px solid #00b8b8;
+        }
+        .invoice-document .inv-header img { height: 44px; }
+        .invoice-document .inv-header .inv-title-block { text-align: right; }
+        .invoice-document .inv-header h1 {
+            font-size: 26px; margin: 0 0 4px; color: #00b8b8; letter-spacing: 1px;
+        }
+        .invoice-document .inv-header .inv-ref { font-size: 14px; color: #526371; }
+        .invoice-document .inv-parties {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px;
+        }
+        .invoice-document .inv-parties .party h3 {
+            font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px;
+            color: #78838f; margin: 0 0 8px;
+        }
+        .invoice-document .inv-parties .party p { margin: 0; font-size: 14px; white-space: pre-line; }
+        .invoice-document .inv-parties .party strong { font-size: 15px; }
+        .invoice-document .inv-meta {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+            margin-bottom: 32px; padding: 16px 20px; background: #f4f7f8; border-radius: 6px;
+        }
+        .invoice-document .inv-meta dt {
+            font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px;
+            color: #526371; margin-bottom: 3px;
+        }
+        .invoice-document .inv-meta dd { font-weight: 600; margin: 0; font-size: 14px; }
+        .invoice-document .inv-table { width: 100%; border-collapse: collapse; margin-bottom: 28px; }
+        .invoice-document .inv-table th {
+            text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px;
+            color: #526371; padding: 10px 8px; border-bottom: 2px solid #d1d5db;
+        }
+        .invoice-document .inv-table td { padding: 12px 8px; border-bottom: 1px solid #e5e7eb; font-size: 14px; vertical-align: top; }
+        .invoice-document .inv-table .col-qty { width: 60px; }
+        .invoice-document .inv-table .col-price { width: 110px; text-align: right; }
+        .invoice-document .inv-table .col-total { width: 120px; text-align: right; font-weight: 600; }
+        .invoice-document .inv-totals { margin-left: auto; width: 300px; margin-bottom: 32px; }
+        .invoice-document .inv-totals .total-row {
+            display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px;
+        }
+        .invoice-document .inv-totals .total-row.total-final {
+            font-weight: 700; font-size: 18px; border-top: 2px solid #111827;
+            padding-top: 12px; margin-top: 4px;
+        }
+        .invoice-document .inv-footer {
+            margin-top: 36px; padding-top: 20px; border-top: 1px solid #e5e7eb;
+            font-size: 13px; color: #78838f; text-align: center; line-height: 1.8;
+        }
+        .invoice-document .status-pill {
+            display: inline-block; padding: 3px 10px; border-radius: 12px;
+            font-size: 12px; font-weight: 600;
+        }
+        .invoice-document .status-paid { background: #d1fae5; color: #065f46; }
+        .invoice-document .status-unpaid { background: #fef3c7; color: #92400e; }
+        .invoice-document .status-cancelled { background: #fee2e2; color: #991b1b; }
+        .invoice-document .status-partial { background: #dbeafe; color: #1e40af; }
+        .invoice-document .back-link {
+            display: inline-block; margin-bottom: 20px; color: #00b8b8;
+            text-decoration: none; font-size: 14px;
+        }
+        .invoice-document .print-btn {
+            float: right; background: #00b8b8; color: #fff; border: none;
+            padding: 8px 18px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;
+        }
+        @media print {
+            body { background: #fff; }
+            .invoice-document { box-shadow: none; border: none; margin: 0; padding: 20px; }
+            .invoice-document .print-btn, .invoice-document .back-link { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="invoice-document">
+        <a class="back-link" href="{{ url_for('main_page', view='invoices') }}">← {{ t("invoice.back_to_invoices") }}</a>
+        <button class="print-btn" onclick="window.print()">{{ t("invoice.print") }}</button>
+
+        <header class="inv-header">
+            <img src="{{ url_for('static', filename='images/laplace-logo-transparent.png') }}" alt="{{ t('portal.brand') }}">
+            <div class="inv-title-block">
+                <h1>{{ t("invoice.document_title") }}</h1>
+                <span class="inv-ref">{{ invoice.get("ref", "") }}</span>
+                <span class="status-pill {{ 'status-paid' if invoice.get('status') == 'Paid' else 'status-cancelled' if invoice.get('status') == 'Cancelled' else 'status-partial' if invoice.get('status') == 'Partial' else 'status-unpaid' }}" style="margin-left:8px">
+                    {{ invoice.get("status", "Pending") }}
+                </span>
+            </div>
+        </header>
+
+        <div class="inv-parties">
+            <div class="party">
+                <h3>{{ t("invoice.from") }}</h3>
+                <p>
+                    <strong>{{ t("portal.brand") }}</strong>
+                    {{ t("invoice.laplace_address") }}
+                    {{ t("invoice.laplace_tax_id") }}
+                </p>
+            </div>
+            <div class="party">
+                <h3>{{ t("invoice.to") }}</h3>
+                <p>
+                    <strong>{{ invoice.get("company_name", "") }}</strong>
+                    {% if invoice.get("company_address") %}{{ invoice.get("company_address") }}{% endif %}
+                    {% if invoice.get("nit") %}NIT: {{ invoice.get("nit") }}{% endif %}
+                    {% if invoice.get("nrc") %}NRC: {{ invoice.get("nrc") }}{% endif %}
+                </p>
+            </div>
+        </div>
+
+        <dl class="inv-meta">
+            <div>
+                <dt>{{ t("invoice.date_issued") }}</dt>
+                <dd>{{ invoice.get("date_issued", "") }}</dd>
+            </div>
+            <div>
+                <dt>{{ t("invoice.due_date") }}</dt>
+                <dd>{{ invoice.get("date_due") or t("date.not_scheduled") }}</dd>
+            </div>
+            <div>
+                <dt>{{ t("invoice.status_label") }}</dt>
+                <dd class="status-pill {{ 'status-paid' if invoice.get('status') == 'Paid' else 'status-cancelled' if invoice.get('status') == 'Cancelled' else 'status-partial' if invoice.get('status') == 'Partial' else 'status-unpaid' }}">
+                    {{ invoice.get("status", "Pending") }}
+                </dd>
+            </div>
+            <div>
+                <dt>{{ t("invoice.ref") }}</dt>
+                <dd>{{ invoice.get("ref", "") }}</dd>
+            </div>
+        </dl>
+
+        <table class="inv-table">
+            <thead>
+                <tr>
+                    <th>{{ t("invoice.description") }}</th>
+                    <th class="col-qty">{{ t("invoice.qty") }}</th>
+                    <th class="col-price">{{ t("invoice.unit_price") }}</th>
+                    <th class="col-total">{{ t("invoice.total") }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in (items or []) %}
+                <tr>
+                    <td>{{ item.get("description", "") }}</td>
+                    <td class="col-qty">{{ item.get("quantity", 1) }}</td>
+                    <td class="col-price">{{ money(item.get("unit_price", 0)) }}</td>
+                    <td class="col-total">{{ money(item.get("total", 0)) }}</td>
+                </tr>
+                {% endfor %}
+                {% if not items %}
+                <tr>
+                    <td>{{ invoice.get("notes") or invoice.get("ref", "") }}</td>
+                    <td class="col-qty">1</td>
+                    <td class="col-price">{{ money(invoice.get("subtotal", 0)) }}</td>
+                    <td class="col-total">{{ money(invoice.get("total", 0)) }}</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+
+        <div class="inv-totals">
+            <div class="total-row">
+                <span>{{ t("invoice.subtotal") }}</span>
+                <span>{{ money(invoice.get("subtotal", 0)) }}</span>
+            </div>
+            <div class="total-row">
+                <span>{{ t("invoice.tax") }} ({{ invoice.get("tax_rate", 13) }}%)</span>
+                <span>{{ money(invoice.get("tax_amount", 0)) }}</span>
+            </div>
+            <div class="total-row total-final">
+                <span>{{ t("invoice.total_due") }}</span>
+                <span>{{ money(invoice.get("total", 0)) }}</span>
+            </div>
+            {% if invoice.get("status") == "Partial" %}
+            <div class="total-row">
+                <span>{{ t("invoice.remaining") }}</span>
+                <span>{{ money(invoice_remaining(invoice)) }}</span>
+            </div>
+            {% elif invoice.get("status") == "Pending" %}
+            <div class="total-row">
+                <span>{{ t("invoice.remaining") }}</span>
+                <span>{{ money(invoice.get("total", 0)) }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if invoice.get("notes") %}
+        <div style="margin-bottom: 20px; padding: 14px 16px; background: #f9fafb; border-radius: 6px; font-size: 14px;">
+            <strong>{{ t("invoice.notes") }}:</strong> {{ invoice.get("notes", "") }}
+        </div>
+        {% endif %}
+
+        <div class="inv-footer">
+            {{ t("portal.brand") }} — {{ t("invoice.generated_on") }} {{ now_text }}<br>
+            {{ t("invoice.footer_disclaimer") }}
+        </div>
+    </div>
+</body>
+</html>

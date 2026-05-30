@@ -4,6 +4,8 @@ from email.message import EmailMessage
 import smtplib
 import os
 import re
+import hashlib
+import ssl
 
 COMMON_PASSWORDS = {
     "password",
@@ -21,32 +23,65 @@ COMMON_PASSWORDS = {
 def generate_verification_token():
     return secrets.token_urlsafe(32)
 
-def send_verification_email(to_email, username, verification_link):
-    sender = os.environ.get("EMAIL_USER")
-    password = os.environ.get("EMAIL_PASSWORD")
+def generate_verification_code():
+    return "".join(secrets.choice(string.digits) for _ in range(8))
+
+
+def generate_recovery_token():
+    return secrets.token_urlsafe(32)
+
+
+def hash_recovery_token(token):
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def get_smtp_settings():
+    host = os.environ.get("SMTP_HOST", "smtp.gmail.com")
+    port = int(os.environ.get("SMTP_PORT", "465"))
+    username = os.environ.get("SMTP_USERNAME") or os.environ.get("EMAIL_USER")
+    password = os.environ.get("SMTP_PASSWORD") or os.environ.get("EMAIL_PASSWORD")
+    sender = os.environ.get("EMAIL_FROM") or username
+
+    if not host or not port or not username or not password or not sender:
+        raise RuntimeError("Missing SMTP email configuration")
+
+    return host, port, username, password, sender
+
+
+def send_email(to_email, subject, body):
+    host, port, username, password, sender = get_smtp_settings()
+    ssl_context = ssl.create_default_context()
 
     message = EmailMessage()
-    message["Subject"] = "Verify your account"
+    message["Subject"] = subject
     message["From"] = sender
     message["To"] = to_email
+    message.set_content(body)
 
-    message.set_content(f"""
+    if port == 465:
+        with smtplib.SMTP_SSL(host, port, context=ssl_context) as smtp:
+            smtp.login(username, password)
+            smtp.send_message(message)
+    else:
+        with smtplib.SMTP(host, port) as smtp:
+            smtp.starttls(context=ssl_context)
+            smtp.login(username, password)
+            smtp.send_message(message)
+
+
+def send_verification_email(to_email, username, verification_link, verification_code):
+    body = f"""
 Hello {username},
 
 Please verify your account by clicking this link:
 
 {verification_link}
-""")
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-        smtp.login(sender, password)
-        smtp.send_message(message)
+Then enter this 8-digit verification code:
 
-
-
-def generate_temporary_password(length=14):
-    characters = string.ascii_letters + string.digits + "!@#$%&*"
-    return "".join(secrets.choice(characters) for _ in range(length))
+{verification_code}
+"""
+    send_email(to_email, "Verify your account", body)
 
 
 
@@ -84,33 +119,14 @@ def verify_password(usuario, password, confirm_password):
     return True, None
 
 
-def send_recovery_email(to_email, username, temp_password):
+def send_recovery_email(to_email, username, reset_link):
+    body = f"""
+Hello {username},
 
-    sender = os.environ.get("EMAIL_USER")
-    password = os.environ.get("EMAIL_PASSWORD")
+Use this one-time link to reset your password:
 
+{reset_link}
 
-    print("SENDER:", sender)
-    print("PASSWORD LOADED:", bool(password))
-    print("PASSWORD LENGTH:", len(password) if password else 0)
-
-
-    if not sender or not password:
-        raise RuntimeError("Missing EMAIL_USER or EMAIL_PASSWORD")
-
-    message = EmailMessage()
-    message["Subject"] = "Account recovery"
-    message["From"] = sender
-    message["To"] = to_email
-    message.set_content(f"""
-        Hello,
-
-        Your username is: {username}
-        Your temporary password is: {temp_password}
-
-        Please log in and change your password.
-        """)
-
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-            smtp.login(sender, password)
-            smtp.send_message(message)
+This link expires in 15 minutes. If you did not request a password reset, ignore this email.
+"""
+    send_email(to_email, "Account recovery", body)
